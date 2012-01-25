@@ -97,11 +97,10 @@ public class TimeTableGenerator {
 		courseConflictMatrix = new int[numCourses][numCourses];
 		for(int i = 0; i < numCourses; i++)
 			for(int j = i; j < numCourses; j++)
-				if(i==j)
+				if(i==j) {
 					courseConflictMatrix[i][j] = 1;
-				else
 					courseConflictMatrix[i][j] = courseConflictMatrix[j][i] = 0;
-
+				}
 		
 //		Integer[] allCourses = (Integer[]) courseInstructorMap.keySet().toArray(new Integer[numCourses]);
 		

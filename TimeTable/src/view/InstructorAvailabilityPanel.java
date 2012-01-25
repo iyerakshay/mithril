@@ -9,10 +9,13 @@ import java.awt.FlowLayout;
 import java.awt.GridLayout;
 import java.awt.event.ItemEvent;
 import java.awt.event.ItemListener;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.Iterator;
 import java.util.List;
 
 import javax.swing.BorderFactory;
@@ -26,9 +29,12 @@ import javax.swing.ScrollPaneConstants;
 import view.TimeTableApp.AppStates;
 
 import model.Config;
-import model.CourseFileReader;
+import model.CourseDetails;
+import model.GenericTimeTable;
+
 import model.StringPadder;
 import model.TimeTable;
+import model.TimeTableCourse;
 
 
 /**
@@ -68,19 +74,38 @@ public class InstructorAvailabilityPanel extends TimeTablePanel {
 		}
 	};
 	
-	public InstructorAvailabilityPanel(Config runConfig, int instructorsCount, TimeTableApp parent) {
+	MouseAdapter mouseListener = new MouseAdapter() {
+		@Override
+        public void mouseClicked(MouseEvent me) {
+            JCheckBox box = (JCheckBox) me.getSource();
+            if(box.isSelected())
+            	box.setSelected(false);
+            else
+            	box.setSelected(true);
+            
+            String id = box.getName();
+            String[] pos = id.split(":");
+			int row = Integer.parseInt(pos[0]);
+			int col = Integer.parseInt(pos[1]);
+			System.out.println("row: " + row + ", col: " + col +"\niDays (prev): " + iDays[row][col]
+					+"\niDays (new): " + !iDays[row][col]);
+			iDays[row][col] = !iDays[row][col];
+        }
+	};
+	
+	public InstructorAvailabilityPanel (Config runConfig, int instructorsCount, TimeTableApp parent) throws Throwable {
 		super(parent, AppStates.InstructorAvailabilityInfo);
 		this.config = runConfig;
 		
-		CourseFileReader reader = config.getCourseFileReader();
+		CourseDetails courseDetails = CourseDetails.getCourseDetails(runConfig.getCourseDetailsFile());
+		if(courseDetails == null) throw new Exception("Invalid course details file");
 		
-		List<String> ins = reader.getInstructorList();
-		
-//		List<String> ins = new ArrayList<String>();
-//		for(int i = 1; i <= instructorsCount; i++) {
-//			ins.add("Instructor " + i);
-//		}
-		
+		List<String> ins = new ArrayList<String>();
+		Iterator<TimeTableCourse> coursesIterator = courseDetails.getCourses();
+		while(coursesIterator.hasNext()) {
+			TimeTableCourse course = coursesIterator.next();
+			ins.add(course.getInstructorName());
+		}
 		Init(runConfig.getStartDate(), runConfig.getEndDate(), ins, parent);
 	}
 	
@@ -92,16 +117,27 @@ public class InstructorAvailabilityPanel extends TimeTablePanel {
 	}
 	
 	private void Init(Date sDate, Date eDate, List<String> instructors, TimeTableApp parent) {
+		
+		Calendar dayCounter = Calendar.getInstance();
+		dayCounter.clear();
+		
 		this.startDate = Calendar.getInstance();
 		this.startDate.setTime(sDate);
+		dayCounter.set(startDate.get(Calendar.YEAR), startDate.get(Calendar.MONTH), startDate.get(Calendar.DATE));
+		this.startDate = (Calendar) dayCounter.clone();
+		
 		this.endDate = Calendar.getInstance();
 		this.endDate.setTime(eDate);
+		dayCounter.set(endDate.get(Calendar.YEAR), endDate.get(Calendar.MONTH), endDate.get(Calendar.DATE));
+		this.endDate = (Calendar) dayCounter.clone();
+		
 		instructorList = instructors;
 		
-		Calendar dayCounter = (Calendar) endDate.clone();
+		dayCounter = (Calendar) endDate.clone();
 		cols = 1;
-		while(dayCounter.after(startDate)) {
-			cols++;
+		while(!dayCounter.before(startDate)) {
+//			if(dayCounter.get(Calendar.DAY_OF_WEEK) != Calendar.SUNDAY)
+				cols++;
 			dayCounter.add(Calendar.DATE, -1);
 		}
 		rows = instructors.size() + 1;
@@ -140,8 +176,11 @@ public class InstructorAvailabilityPanel extends TimeTablePanel {
 		if(row%2 == 0) label.setBackground(Color.GRAY);
 		else label.setBackground(Color.WHITE);
 		mainPanel.add(label);
+		
+//		JPanel panel = new JPanel(new FlowLayout(FlowLayout.CENTER));
 		for(int i = 1; i < cols; i++) {
 			JPanel panel = new JPanel(new FlowLayout(FlowLayout.CENTER));
+			
 			panel.setBorder(BorderFactory.createLineBorder(Color.BLACK, 2));
 			if(row%2 == 0) panel.setBackground(Color.GRAY);
 			else panel.setBackground(Color.WHITE);
@@ -150,10 +189,14 @@ public class InstructorAvailabilityPanel extends TimeTablePanel {
 			else cboxes[row-1][i-1].setBackground(Color.WHITE);
 			cboxes[row-1][i-1].setSelected(true);
 			cboxes[row-1][i-1].setName((row-1)+":"+(i-1));
-			cboxes[row-1][i-1].addItemListener(listener);
+//			cboxes[row-1][i-1].addItemListener(listener);
+			cboxes[row-1][i-1].addMouseListener(mouseListener);
 			panel.add(cboxes[row-1][i-1]);
 			mainPanel.add(panel);
+			
 		}
+		
+//		mainPanel.add(panel);
 	}
 
 	private void makeHeaderRow() {
@@ -166,10 +209,12 @@ public class InstructorAvailabilityPanel extends TimeTablePanel {
 			cal.add(Calendar.DATE, 1);
 			mainPanel.add(label);
 		}
-		this.add(mainPanel);
+//		this.add(mainPanel);
 	}
 	
 	public void handleNext() {
+		config.setDayPreferences(iDays);
+		
 		TimeTablePanel timeTableEntryPanel = PanelsFactory.getFactory(getParent()).getNextPanel(config);
 		getParent().setPanel(timeTableEntryPanel);
 	}

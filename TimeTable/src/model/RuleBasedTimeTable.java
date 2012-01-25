@@ -4,131 +4,149 @@
 package model;
 
 import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Random;
 
 /**
  * @author Akshay
  *
  */
-public class RuleBasedTimeTable implements TimeTable {
-	//TimeTableIterator iterator;// = new TimeTableIterator(cfName, saName, rooms, sessions)
-	private int numRooms;
-	private int numSessions;
-	private TimeTableGenerator timetableGenerator = new TimeTableGenerator();
-	private int day;
-	private List<TimeTableDay> timeTableDayList = new ArrayList<TimeTableDay>();
-	private boolean continueCreating = true;
-	private RuledTTIterator iterator;
+public class RuleBasedTimeTable extends TimeTable implements Iterator<TimeTableDay> {
+	
+	private Date startDate, endDate;
+	boolean[][] dayPreferences;
+	TimeTableCourse[] courses;
+	int count = 0;
+	int numSessions = 0, numRooms = 0;
 	
 	public RuleBasedTimeTable(Config runConfig) throws Throwable {
-		numRooms = runConfig.getRoomsPerSession();
+		CourseDetails courseDetails = CourseDetails.getCourseDetails(runConfig.getCourseDetailsFile());
+		if(courseDetails == null) throw new Exception("Invalid course details file");
+		
+		courses = courseDetails.getCoursesAsArray();
 		numSessions = runConfig.getSessionsPerDay();
-		timetableGenerator.createTimeTable(runConfig.getCourseFileReader(), runConfig.getStudentDetailsFile());
+		numRooms = runConfig.getRoomsPerSession();
 		
-		day = 0;
-		while(continueCreating) getTimeTable(day++);
-	}
-	
-	public TimeTableDay getTimeTable(int day) throws TimeTableSessionException {
-		TimeTableDay curDay;
+		dayPreferences = runConfig.getDayPreferences();
+		startDate = runConfig.getStartDate();
+		endDate = runConfig.getEndDate();
 		
-		if(day < timeTableDayList.size()) {
-			curDay = timeTableDayList.get(day); 
-			if(curDay != null) {
-				reverseTimeTable(curDay);
+		/*
+		int count = 0;
+		int coursesCount = dayPreferences.length;
+		while(startDate.before(runConfig.getEndDate())) {
+			Calendar calendar = Calendar.getInstance();
+			calendar.setTime(startDate);
+			calendar.add(Calendar.DATE, 1);
+			
+			startDate = calendar.getTime();
+			if(calendar.get(Calendar.DAY_OF_WEEK) == Calendar.SUNDAY) continue;
+			
+			List<TimeTableCourse> candidateCourses = new ArrayList<TimeTableCourse>();
+			for(int courseIndex = 0; courseIndex < coursesCount; courseIndex++) {
+				if(dayPreferences[courseIndex][count])
+					candidateCourses.add(courses[courseIndex]);
 			}
+			
+			count++;
 		}
-		curDay = new TimeTableDay(day, numSessions);
-		continueCreating  = timetableGenerator.scheduleDay(curDay, numRooms);
-		timeTableDayList.add(day, curDay);
-		return curDay;
+		*/
 	}
-	
-	public void swapDays(TimeTableDay day1, TimeTableDay day2) {
-		int d1 = day1.getDayNumber();
-		day1.setDayNumber(day2.getDayNumber());
-		day2.setDayNumber(d1);
-		timeTableDayList.remove(day1.getDayNumber());
-		timeTableDayList.add(day1.getDayNumber(), day1);
-		timeTableDayList.remove(day2.getDayNumber());
-		timeTableDayList.add(day2.getDayNumber(), day2);
-	}
-	
-	public void reOrderDay(int fromDay, int toDay) {
-		TimeTableDay day = timeTableDayList.remove(fromDay);
-		day.setDayNumber(toDay);
-		timeTableDayList.add(toDay, day);
-		int numElements = timeTableDayList.size();
-		for(int i = toDay+1; i < numElements; i++) {
-			timeTableDayList.get(i).setDayNumber(i+1);
-		}
-	}
-	
-	public void reverseTimeTable(TimeTableDay curDay) {
-		timetableGenerator.unscheduleDay(curDay);
-	}
-	
+
+	@Override
 	public Iterator<TimeTableDay> getTimeTableIterator() {
-		iterator = new RuledTTIterator(this);
-		return iterator;
+		// TODO Auto-generated method stub
+		return this;
 	}
-	
-	protected List<TimeTableDay> getCompleteTimeTable() {
-		return timeTableDayList;
-	}
-	
-	/*public static void main(String[] args) {
-		try {
-			TimeTable tt = new TimeTable(args[0], args[1], 6, 7);
-			Iterator<TimeTableDay> myIterator = tt.getTimeTableIterator();
-			while(myIterator.hasNext()) {
-				System.out.println(myIterator.next());
-			}
-			//createTimeTable(args[0], args[1]);
-		} catch(Throwable e) {
-			System.err.println(e);
-			e.printStackTrace();
-			System.exit(0);
-		}
-	}*/
-}
 
-class RuledTTIterator implements Iterator<TimeTableDay>{
-
-	private int counter = 0;
-	private RuleBasedTimeTable tt;
-	private List<TimeTableDay> myList;
-//	private boolean removeToggle = false;
-	
-	RuledTTIterator(RuleBasedTimeTable myTT) {
-		tt = myTT;
-		myList = tt.getCompleteTimeTable();
-		counter = 0;
-	}
-	
 	@Override
 	public boolean hasNext() {
-		if(counter < myList.size()) return true;
-		return false;
+		Calendar cal = Calendar.getInstance();
+		cal.setTime(endDate);
+		if(cal.get(Calendar.DAY_OF_WEEK) == Calendar.SUNDAY) {
+			return  startDate.before(endDate);
+		}
+		return !(startDate.after(endDate));
 	}
 
 	@Override
-	public TimeTableDay next() {
-		if(counter < myList.size()) {
-//			removeToggle = true;
-			return myList.get(counter++);
+	public TimeTableDay next(){
+		while(true) {
+			Calendar calendar = Calendar.getInstance();
+			calendar.setTime(startDate);
+			if(calendar.get(Calendar.DAY_OF_WEEK) == Calendar.SUNDAY) {
+				calendar.add(Calendar.DATE, 1);
+				startDate = calendar.getTime();
+				continue;
+			}
+			
+			List<TimeTableCourse> candidateCourses = new ArrayList<TimeTableCourse>();
+			for(int courseIndex = 0; courseIndex < courses.length; courseIndex++) {
+				if((courses[courseIndex].getSessionsRequired() > 0) && dayPreferences[courseIndex][count] && (calendar.get(Calendar.DAY_OF_WEEK)/5 == courses[courseIndex].getCourseIndex()%2) )
+					candidateCourses.add(courses[courseIndex]);
+			}
+			if(candidateCourses.size() == 0) { //no courses could be found. relax the constraint
+				for(int courseIndex = 0; courseIndex < courses.length; courseIndex++) {
+					if((courses[courseIndex].getSessionsRequired() > 0) && dayPreferences[courseIndex][count])
+						candidateCourses.add(courses[courseIndex]);
+				}
+			}
+			
+			count++;
+			
+			TimeTableDay day = new TimeTableDay(count, startDate, numSessions);
+			
+			if(candidateCourses.size() == 0) {
+				calendar.add(Calendar.DATE, 1);
+				startDate = calendar.getTime();
+				return day;
+			}
+			
+//			Random random = new Random();
+			int courseCounter = 0;
+			while(day.getSessions().size() < numSessions) {
+				TimeTableSession session = new TimeTableSession(numRooms);
+				List<TimeTableCourse> coursesToSchedule = new ArrayList<TimeTableCourse>();
+				coursesToSchedule.addAll(candidateCourses);
+				
+				int room = 0;
+				while(room < numRooms) {
+					try {
+						int courseIdToSchedule = 0;
+						if(coursesToSchedule.size() > 0) courseIdToSchedule = 0;
+						else break;
+//						int courseIdToSchedule = random.nextInt(coursesToSchedule.size());
+						TimeTableCourse course = coursesToSchedule.get(courseIdToSchedule);
+						session.addCourse(course, room);
+						course.setSessionsRequired(course.getSessionsRequired()-1);
+						
+						coursesToSchedule.remove(courseIdToSchedule);
+						if(coursesToSchedule.isEmpty()) break;
+					} catch (TimeTableSessionException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
+					room++;
+				}
+				
+				day.addSession(session);
+			}
+			calendar.add(Calendar.DATE, 1);
+			startDate = calendar.getTime();
+			
+			return day;
 		}
-		return null;
 	}
 
 	@Override
 	public void remove() {
 		// TODO Auto-generated method stub
-//		if((removeToggle) && (counter > 0)) {
-//			removeToggle = false;
-//			tt.reverseTimeTable(myList.get(--counter));
-//		}
+		
 	}
+	
+
 	
 }

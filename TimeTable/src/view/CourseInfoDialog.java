@@ -1,15 +1,18 @@
 package view;
 
+import java.awt.Component;
 import java.awt.GridLayout;
 import java.util.Date;
 
 import javax.swing.JOptionPane;
+import javax.swing.JSpinner;
 import javax.swing.SwingConstants;
+import javax.swing.JSpinner.DateEditor;
+import javax.swing.SpinnerDateModel;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 
 import model.Config;
-import model.CourseFileReader;
 
 import view.TimeTableApp.AppStates;
 
@@ -26,7 +29,7 @@ public class CourseInfoDialog extends TimeTablePanel implements DocumentListener
 	ConfigurablePanel courseInfo = new FileChoiceTrio("Course details file ", SwingConstants.CENTER, 40, this);
 	
 	private boolean nextEnabled = false;
-	//private Config config;
+	private Config config;
 
 	public CourseInfoDialog(TimeTableApp parent) {
 		super(parent, AppStates.CourseInfo);
@@ -80,13 +83,11 @@ public class CourseInfoDialog extends TimeTablePanel implements DocumentListener
 			config.setEndDate(end);
 			
 			config.setCourseDetailsFile((String)courseInfo.getValue());
-			config.setCourseFileReader(new CourseFileReader((String) courseInfo.getValue()));
 
 			TimeTablePanel nextPanel = PanelsFactory.getFactory(getParent()).getNextPanel(config);
 			getParent().setPanel(nextPanel);
 		} catch (Throwable e) {
-			// TODO Auto-generated catch bloc
-			JOptionPane.showMessageDialog(this, e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 	}

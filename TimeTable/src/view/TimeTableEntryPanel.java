@@ -6,6 +6,7 @@ import java.awt.Font;
 import java.awt.GridLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -42,7 +43,7 @@ public class TimeTableEntryPanel extends TimeTablePanel {
 		List<TimeTableDay> daysToDisplay = new ArrayList<TimeTableDay>();
 		
 		int numSessions = getNextSetOfDays(7, daysToDisplay);
-		
+		                                                                                 
 //		timeTableIterator.hasNext();
 //		TimeTableDay timeTable = timeTableIterator.next();
 		
@@ -161,7 +162,9 @@ public class TimeTableEntryPanel extends TimeTablePanel {
 		headerLabel.setFont(new Font("Arial", Font.BOLD, 20));
 		basePane.add(headerLabel);
 		for(TimeTableDay day: daysToDisplay) {
-			JLabel dayNumberLabel = new JLabel("Day: " + (day.getDayNumber()+1));
+			SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy");
+//			JLabel dayNumberLabel = new JLabel("Day: " + (day.getDayNumber()));
+			JLabel dayNumberLabel = new JLabel("Date: " + sdf.format(day.getDate()));
 			dayNumberLabel.setFont(new Font("Arial", Font.BOLD, 16));
 			basePane.add(dayNumberLabel);
 			int sessionColor = 0;

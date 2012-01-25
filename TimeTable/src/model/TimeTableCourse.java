@@ -47,4 +47,8 @@ public class TimeTableCourse {
 		String retVal = "[Course:\nNumber: " + courseNum + "\nName: " + courseName + "\nInstructor: " + instructorName + "\nSessions Required: " + sessionsRequired + "\nIndex: " + courseIndex + "\n]";
 		return retVal;
 	}
+	
+	public void setSessionsRequired(int sessions) {
+		sessionsRequired = sessions;
+	}
 }

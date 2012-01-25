@@ -4,6 +4,7 @@
 package model;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 /**
@@ -13,11 +14,26 @@ import java.util.List;
 public class TimeTableDay {
 
 	private int day, numSessions;
+	private Date date;
 	private List<TimeTableSession> sessionList = new ArrayList<TimeTableSession>();
+	
+	TimeTableDay(int dayNumber, Date date, int sessions) {
+		day = dayNumber;
+		this.date = date;
+		numSessions = sessions;
+	}
 	
 	TimeTableDay(int dayNumber, int sessions) {
 		day = dayNumber;
 		numSessions = sessions;
+	}
+	
+	public void setDate(Date date) {
+		this.date = date;
+	}
+	
+	public Date getDate() {
+		return date;
 	}
 	
 	public void setDayNumber(int dayNum) {
