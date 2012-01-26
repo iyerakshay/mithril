@@ -21,6 +21,9 @@ public class RuleBasedTimeTable extends TimeTable implements Iterator<TimeTableD
 	TimeTableCourse[] courses;
 	int count = 0;
 	int numSessions = 0, numRooms = 0;
+	private int[] sessionsRequirement;
+	private Integer[] courseOrder;
+	private Integer[] inverseCourseOrder;
 	
 	public RuleBasedTimeTable(Config runConfig) throws Throwable {
 		CourseDetails courseDetails = CourseDetails.getCourseDetails(runConfig.getCourseDetailsFile());
@@ -34,26 +37,10 @@ public class RuleBasedTimeTable extends TimeTable implements Iterator<TimeTableD
 		startDate = runConfig.getStartDate();
 		endDate = runConfig.getEndDate();
 		
-		/*
-		int count = 0;
-		int coursesCount = dayPreferences.length;
-		while(startDate.before(runConfig.getEndDate())) {
-			Calendar calendar = Calendar.getInstance();
-			calendar.setTime(startDate);
-			calendar.add(Calendar.DATE, 1);
-			
-			startDate = calendar.getTime();
-			if(calendar.get(Calendar.DAY_OF_WEEK) == Calendar.SUNDAY) continue;
-			
-			List<TimeTableCourse> candidateCourses = new ArrayList<TimeTableCourse>();
-			for(int courseIndex = 0; courseIndex < coursesCount; courseIndex++) {
-				if(dayPreferences[courseIndex][count])
-					candidateCourses.add(courses[courseIndex]);
-			}
-			
-			count++;
-		}
-		*/
+		sessionsRequirement = courseDetails.getAllSessionsRequirement();
+		courseOrder = courseDetails.getCourseToOrderBySessionsArray();
+		inverseCourseOrder = courseDetails.getOrderBySessionsToCourseArray();
+		
 	}
 
 	@Override
@@ -106,7 +93,6 @@ public class RuleBasedTimeTable extends TimeTable implements Iterator<TimeTableD
 			}
 			
 //			Random random = new Random();
-			int courseCounter = 0;
 			while(day.getSessions().size() < numSessions) {
 				TimeTableSession session = new TimeTableSession(numRooms);
 				List<TimeTableCourse> coursesToSchedule = new ArrayList<TimeTableCourse>();
@@ -121,7 +107,7 @@ public class RuleBasedTimeTable extends TimeTable implements Iterator<TimeTableD
 //						int courseIdToSchedule = random.nextInt(coursesToSchedule.size());
 						TimeTableCourse course = coursesToSchedule.get(courseIdToSchedule);
 						session.addCourse(course, room);
-						course.setSessionsRequired(course.getSessionsRequired()-1);
+						course.setSessionsRemaining(course.getSessionsRemaining()-1);
 						
 						coursesToSchedule.remove(courseIdToSchedule);
 						if(coursesToSchedule.isEmpty()) break;

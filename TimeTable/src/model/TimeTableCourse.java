@@ -13,6 +13,8 @@ public class TimeTableCourse {
 	private String courseName;
 	private String instructorName;
 	private int sessionsRequired;
+	private int daysAvailable = 1;
+	private int sessionsRemaining;
 	
 	
 	public TimeTableCourse(int courseIdx, int courseNumber, String courseName, String instructorName, int sessionsRequired) {
@@ -20,6 +22,7 @@ public class TimeTableCourse {
 		this.courseName = courseName;
 		this.instructorName = instructorName;
 		this.sessionsRequired = sessionsRequired;
+		this.sessionsRemaining = this.sessionsRequired;
 		courseIndex = courseIdx;
 	}
 	
@@ -48,7 +51,19 @@ public class TimeTableCourse {
 		return retVal;
 	}
 	
-	public void setSessionsRequired(int sessions) {
-		sessionsRequired = sessions;
+	public int getDaysAvailable() {
+		return daysAvailable;
+	}
+	
+	public void setDaysAvailable(int days) {
+		daysAvailable = days;
+	}
+	
+	public int getSessionsRemaining() {
+		return sessionsRemaining;
+	}
+	
+	public void setSessionsRemaining(int sessions) {
+		sessionsRemaining = sessions;
 	}
 }

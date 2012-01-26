@@ -54,6 +54,8 @@ public class InstructorAvailabilityPanel extends TimeTablePanel {
 	private Calendar startDate, endDate;
 	private List<String> instructorList;
 	private Config config;
+	private CourseDetails courseDetails;
+	private List<String> insList;
 	
 	ItemListener listener = new ItemListener() {
 		
@@ -97,16 +99,16 @@ public class InstructorAvailabilityPanel extends TimeTablePanel {
 		super(parent, AppStates.InstructorAvailabilityInfo);
 		this.config = runConfig;
 		
-		CourseDetails courseDetails = CourseDetails.getCourseDetails(runConfig.getCourseDetailsFile());
+		courseDetails = CourseDetails.getCourseDetails(runConfig.getCourseDetailsFile());
 		if(courseDetails == null) throw new Exception("Invalid course details file");
 		
-		List<String> ins = new ArrayList<String>();
+		insList = new ArrayList<String>();
 		Iterator<TimeTableCourse> coursesIterator = courseDetails.getCourses();
 		while(coursesIterator.hasNext()) {
 			TimeTableCourse course = coursesIterator.next();
-			ins.add(course.getInstructorName());
+			insList.add(course.getInstructorName());
 		}
-		Init(runConfig.getStartDate(), runConfig.getEndDate(), ins, parent);
+		Init(runConfig.getStartDate(), runConfig.getEndDate(), insList, parent);
 	}
 	
 	public InstructorAvailabilityPanel(Date sDate, Date eDate, List<String> instructors, TimeTableApp parent) {
@@ -212,8 +214,31 @@ public class InstructorAvailabilityPanel extends TimeTablePanel {
 //		this.add(mainPanel);
 	}
 	
+	public int[] getInsDays() {
+		int[] insDays = new int[iDays.length];
+		
+		for(int i = 0; i < rows-1; i++) {
+			int days = 0;
+			for(int j = 0; j < cols-1; j++) {
+				days += (iDays[i][j]?1:0);
+			}
+			insDays[i] = days;
+		}
+		return insDays;
+	}
+	
 	public void handleNext() {
 		config.setDayPreferences(iDays);
+		
+		int[] insDays = getInsDays();
+		
+		for (Iterator<TimeTableCourse> iter = courseDetails.getCourses(); iter.hasNext();) {
+			TimeTableCourse course = (TimeTableCourse) iter.next();
+			String instructor = course.getInstructorName();
+			int insIdx = insList.indexOf(instructor);
+			int days = insDays[insIdx];
+			course.setDaysAvailable(days);
+		}
 		
 		TimeTablePanel timeTableEntryPanel = PanelsFactory.getFactory(getParent()).getNextPanel(config);
 		getParent().setPanel(timeTableEntryPanel);
